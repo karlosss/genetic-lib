@@ -10,7 +10,7 @@ class GeneticSolver:
                  parent_selector,
                  crossoverer,
                  mutator,
-                 elite_mutation_preventer,
+                 mutation_preventer,
                  survivor_selector,
                  terminator,
                  renderer=NullRenderer()):
@@ -22,14 +22,14 @@ class GeneticSolver:
         self._mutator = None
         self._survivor_selector = None
         self._terminator = None
-        self._elite_mutation_preventer = None
+        self._mutation_preventer = None
 
         self._assign_init_param("init_pop_generator", init_pop_generator)
         self._assign_init_param("fitness_calculator", fitness_calculator)
         self._assign_init_param("parent_selector", parent_selector)
         self._assign_init_param("crossoverer", crossoverer)
         self._assign_init_param("mutator", mutator)
-        self._assign_init_param("elite_mutation_preventer", elite_mutation_preventer)
+        self._assign_init_param("mutation_preventer", mutation_preventer)
         self._assign_init_param("survivor_selector", survivor_selector)
         self._assign_init_param("terminator", terminator)
 
@@ -56,8 +56,8 @@ class GeneticSolver:
         return pop
 
     def _get_mutation_prevented(self, population):
-        elite = self._elite_mutation_preventer(population)
-        self._list_of_genes_check("elite_mutation_preventer", elite)
+        elite = self._mutation_preventer(population)
+        self._list_of_genes_check("mutation_preventer", elite)
         return elite
 
     def _select_parents_for_next_generation(self, population):
