@@ -143,4 +143,4 @@ Shows nothing.
 
 ### `WolframPlotRenderer(file)`
 
-Outputs a code for showing a plot in Wolfram language tp `file`.
+Outputs a code for showing a plot in Wolfram language to `file`.
