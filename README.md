@@ -5,7 +5,7 @@
 The algorithm runs as follows:
 
 ```
-generate initial population and calculate its fitness
+generate initial population, calculate its fitness and fix non-solutions
 remember the best individual
 lock in the population size
 repeat forever:
@@ -13,7 +13,7 @@ repeat forever:
     select parents for next generation (from the whole population)
     cross the parents over, creating a number of offspring equal to the initial population size
     mutate offspring and mutable individuals
-    calculate fitness of the population
+    fix non-solutions and calculate fitness
     check for a new best individual
     select an amount of survivors equal to the initial population size
     advance to the next generation
@@ -22,17 +22,50 @@ repeat forever:
 
 This main loop is available in `GeneticSolver`. It accepts a lot of parameters in the initializer. Those parameters and their options are described below. Unless stated otherwise, all of them are invoked repeatedly, whenever needed.
 
+## Non-solution Handlers
+
+These serve for handling non-solutions. Whenever a new gene is made, this checks if it is a solution and if not, it might handle it.
+
+### `SuddenDeathNonSolutionHandler()`
+
+This destorys any non-solution. A replacement is taken randomly from the previous generation.
+
+### `DoNothingNonSolutionHandler()`
+
+This keeps the non-solution in the population.
+
+### Custom non-solution handlers
+
+It might be useful to implement a custom non-solution handler. Implement the `NonSolutionHandler` interface, namely `__call__(self, gene)`, where `gene` is the gene to be tested. It shall return a fixed version of it. If the gene shall not be fixed, raise a `SuddenDeathException`.
+
+An example:
+
+```
+class KnapsackNonSolutionHandler(NonSolutionHandler):
+    def __call__(self, gene):
+        if gene.fitness < 0:
+            bits_set = [i for i in range(len(gene)) if gene[i] == 1]
+            while gene.fitness < 0:
+                rnd = randint(0, len(bits_set)-1)
+                gene[bits_set[rnd]] = 0
+                del bits_set[rnd]
+                gene.fitness = self.fitness_calculator(gene)
+        return gene
+```
+
+
+
 ## Generators
 
 These serve for generating the initial population.
 
-### `IntegerGeneInitPopGenerator(gene_size, pop_size, range_from, range_to)`
+### `IntegerGeneInitPopGenerator(pop_size, non_solution_handler, range_from, range_to)`
 
-Generates `pop_size` genes, each of `gene_size` long, filled with uniformly random integers from range `range_from` to `range_to`.
+Generates `pop_size` genes, each of `gene_size` long, filled with uniformly random integers from range `range_from` to `range_to`. Non-solutions are handled with `non_solution_handler`.
 
-### `BinaryGeneInitPopGenerator(gene_size, pop_size)`
+### `BinaryGeneInitPopGenerator(pop_size, non_solution_handler, gene_size)`
 
-Generates `pop_size` genes, each of `gene_size` long, filled with uniformly random bits.
+Generates `pop_size` genes, each of `gene_size` long, filled with uniformly random bits. Non-solutions are handled with `non_solution_handler`.
 
 ## Fitness Calculator
 
