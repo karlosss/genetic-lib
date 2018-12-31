@@ -166,6 +166,10 @@ Terminates after the fitness of the best individual has not improved for `genera
 
 Terminates after at least `population_percentage_limit` percent of the population has its fitness deviating from the best by no more than `fitness_threshold` percent.
 
+### `RunForeverTerminator()`
+
+Runs forever, just prints the best solution of each generation to standard output.
+
 ## Renderers
 
 Called after each generation and after the algorithm terminates. Serve for visualizing the progress of the algorithm.
