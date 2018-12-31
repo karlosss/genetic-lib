@@ -1,4 +1,8 @@
+from copy import deepcopy
+from random import randint
+
 from genetic.gene import Gene
+from genetic.generators import SuddenDeathException
 from genetic.interfaces import Renderer
 from genetic.renderers import NullRenderer
 
@@ -11,6 +15,7 @@ class GeneticSolver:
                  crossoverer,
                  mutator,
                  mutation_preventer,
+                 non_solution_handler,
                  survivor_selector,
                  terminator,
                  renderer=NullRenderer()):
@@ -21,6 +26,7 @@ class GeneticSolver:
         self._crossoverer = None
         self._mutator = None
         self._survivor_selector = None
+        self._non_solution_handler = None
         self._terminator = None
         self._mutation_preventer = None
 
@@ -30,8 +36,11 @@ class GeneticSolver:
         self._assign_init_param("crossoverer", crossoverer)
         self._assign_init_param("mutator", mutator)
         self._assign_init_param("mutation_preventer", mutation_preventer)
+        self._assign_init_param("non_solution_handler", non_solution_handler)
         self._assign_init_param("survivor_selector", survivor_selector)
         self._assign_init_param("terminator", terminator)
+
+        self._non_solution_handler.set_fitness_calculator(self._fitness_calculator)
 
         if not isinstance(renderer, Renderer):
             raise TypeError("renderer must be a Renderer, not {}.".format(renderer.__class__.__name__))
@@ -51,6 +60,7 @@ class GeneticSolver:
                 raise TypeError("Items in {} list must be Genes, not {}.".format(param_name, item.__class__.__name__))
 
     def _generate_init_pop(self):
+        self._init_pop_generator.set_fitness_calculator(self._fitness_calculator)
         pop = self._init_pop_generator()
         self._list_of_genes_check("init_pop_generator", pop)
         return pop
@@ -75,6 +85,19 @@ class GeneticSolver:
         self._list_of_genes_check("mutator", mutated)
         return mutated
 
+    def _fitness_and_repair(self, next_generation, population):
+        pop = None
+        for i in range(len(next_generation)):
+            next_generation[i].fitness = self._fitness_calculator(next_generation[i])
+            try:
+                next_generation[i] = self._non_solution_handler(next_generation[i])
+            except SuddenDeathException:
+                if pop is None:
+                    pop = deepcopy(population)
+                replacement = pop.pop(randint(0, len(pop)-1))
+                next_generation[i] = replacement
+        return next_generation
+
     def _select_survivors(self, next_generation, population_size):
         survivors = self._survivor_selector(next_generation, count=population_size)
         self._list_of_genes_check("survivor_selector", survivors)
@@ -94,8 +117,6 @@ class GeneticSolver:
     def run(self):
         # generate initial population
         population = self._generate_init_pop()
-        for item in population:
-            item.fitness = self._fitness_calculator(item)
         population_size = len(population)
 
         # find current best
@@ -118,21 +139,19 @@ class GeneticSolver:
             offspring = self._crossover(parents, elite + population)
 
             # mutate the next generation candidates
-            offspring = self._mutate(offspring)
-            population = self._mutate(population)
+            mutated_offspring = self._mutate(offspring)
+            mutated_population = self._mutate(population)
 
-            next_generation_candidates = offspring + population
-
-            # calculate fitness of the next generation candidates
-            for item in next_generation_candidates:
-                item.fitness = self._fitness_calculator(item)
+            next_generation_candidates = mutated_offspring + mutated_population
 
             next_generation = elite + next_generation_candidates
 
+            next_generation = self._fitness_and_repair(next_generation, population)
+
             # check for a new best
-            next_generation.sort(key=lambda x: -x.fitness)
-            if next_generation[0].fitness > best.fitness:
-                best = next_generation[0]
+            this_gen_best = max(next_generation, key=lambda x: x.fitness)
+            if this_gen_best.fitness > best.fitness:
+                best = this_gen_best
 
             # select survivors
             next_generation = self._select_survivors(next_generation, population_size)

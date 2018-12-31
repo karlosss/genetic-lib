@@ -1,5 +1,6 @@
+from bisect import bisect_left
 from copy import deepcopy
-from random import sample
+from random import sample, randint
 
 from genetic.interfaces import Selector
 
@@ -30,9 +31,13 @@ class CountSelector(Selector):
             count = len(population)
 
         pop = deepcopy(population)
-        ret = []
-        for _ in range(elitism):
-            ret.append(pop.pop(0))
+        pop.sort(key=lambda x: x.fitness)
+
+        if elitism != 0:
+            ret = pop[-elitism:]
+            del pop[-elitism:]
+        else:
+            ret = []
 
         for _ in range(count - elitism):
             ret.append(pop.pop(self.choose_parent_id(pop)))
@@ -60,3 +65,16 @@ class AgeSelector(CountSelector):
     def choose_parent_id(self, population):
         ids = [i for i in range(len(population))]
         return max(ids, key=lambda x: -population[x].age)
+
+
+class RouletteSelector(CountSelector):
+    def choose_parent_id(self, population):
+        cumulative_probs = [0]
+
+        for item in reversed(population):
+            if item.fitness > 0:
+                cumulative_probs.append(cumulative_probs[-1]+item.fitness)
+
+        rnd = randint(cumulative_probs[0], cumulative_probs[-1])
+        i = bisect_left(cumulative_probs, rnd)
+        return len(population) - i

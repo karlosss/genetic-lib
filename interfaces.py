@@ -33,6 +33,20 @@ class MutationPreventer:
         raise NotImplementedError
 
 
+class NonSolutionHandler:
+    def __init__(self):
+        self.fitness_calculator = None
+
+    def set_fitness_calculator(self, fc):
+        self.fitness_calculator = fc
+
+    def calculate_fitness(self, gene):
+        gene.fitness = self.fitness_calculator(gene)
+
+    def __call__(self, gene):
+        raise NotImplementedError
+
+
 class Renderer:
     def append(self, population, generation_cnt):
         raise NotImplementedError
