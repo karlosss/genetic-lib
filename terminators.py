@@ -42,3 +42,9 @@ class FitnessDegenerationTerminator(Terminator):
 
     def __call__(self, population, generation_cnt):
         return self._num_best_fitness(population) / len(population) >= self.population_percentage_limit
+
+
+class RunForeverTerminator(Terminator):
+    def __call__(self, population, generation_cnt):
+        print(population[0].fitness)
+        return False
