@@ -19,7 +19,7 @@ class Crossoverer:
 
 
 class Terminator:
-    def __call__(self, population, generation_cnt):
+    def __call__(self, population, best, generation_cnt):
         raise NotImplementedError
 
 

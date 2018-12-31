@@ -1,10 +1,20 @@
 from copy import deepcopy
 from random import randint
+from signal import signal, SIGINT
 
 from genetic.gene import Gene
 from genetic.generators import SuddenDeathException
 from genetic.interfaces import Renderer
 from genetic.renderers import NullRenderer
+
+
+class SIGINT_handler:
+    def __init__(self):
+        self.SIGINT = False
+
+    def signal_handler(self, *args, **kwargs):
+        print("---SIGINT received, will terminate---")
+        self.SIGINT = True
 
 
 class GeneticSolver:
@@ -41,6 +51,9 @@ class GeneticSolver:
         self._assign_init_param("terminator", terminator)
 
         self._non_solution_handler.set_fitness_calculator(self._fitness_calculator)
+
+        self._sigint_handler = SIGINT_handler()
+        signal(SIGINT, self._sigint_handler.signal_handler)
 
         if not isinstance(renderer, Renderer):
             raise TypeError("renderer must be a Renderer, not {}.".format(renderer.__class__.__name__))
@@ -103,10 +116,11 @@ class GeneticSolver:
         self._list_of_genes_check("survivor_selector", survivors)
         return survivors
 
-    def _terminate(self, population, generation_cnt):
-        term = self._terminator(population, generation_cnt)
+    def _terminate(self, population, best, generation_cnt):
+        term = self._terminator(population, best, generation_cnt)
         if not isinstance(term, bool):
             raise TypeError("terminator must return a bool, not {}.".format(term.__class__.__name__))
+        term = term or self._sigint_handler.SIGINT
         if term:
             self._renderer.write()
         return term
@@ -123,7 +137,7 @@ class GeneticSolver:
         population.sort(key=lambda x: -x.fitness)
         best = population[0]
 
-        generation_cnt = 1
+        generation_cnt = 0
 
         # render initial state
         self._render(population, generation_cnt)
@@ -172,5 +186,5 @@ class GeneticSolver:
             self._render(population, generation_cnt)
 
             # check if the algorithm terminates
-            if self._terminate(population, generation_cnt):
+            if self._terminate(population, best, generation_cnt):
                 return best

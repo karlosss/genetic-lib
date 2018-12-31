@@ -5,7 +5,7 @@ class GenerationCountTerminator(Terminator):
     def __init__(self, generation_limit):
         self.generation_limit = generation_limit
 
-    def __call__(self, population, generation_cnt):
+    def __call__(self, population, best, generation_cnt):
         return generation_cnt >= self.generation_limit
 
 
@@ -15,9 +15,9 @@ class NoImprovementTerminator(Terminator):
         self._best_fitness = None
         self._generation_cnt = 0
 
-    def __call__(self, population, generation_cnt):
-        if self._best_fitness is None or population[0].fitness > self._best_fitness:
-            self._best_fitness = population[0].fitness
+    def __call__(self, population, best, generation_cnt):
+        if self._best_fitness is None or best.fitness > self._best_fitness:
+            self._best_fitness = best.fitness
             self._generation_cnt = 0
         else:
             self._generation_cnt += 1
@@ -40,11 +40,11 @@ class FitnessDegenerationTerminator(Terminator):
                 break
         return cnt
 
-    def __call__(self, population, generation_cnt):
+    def __call__(self, population, best, generation_cnt):
         return self._num_best_fitness(population) / len(population) >= self.population_percentage_limit
 
 
 class RunForeverTerminator(Terminator):
-    def __call__(self, population, generation_cnt):
-        print(population[0].fitness)
+    def __call__(self, population, best, generation_cnt):
+        print("Generation: {}, best: {}".format(generation_cnt, best))
         return False
