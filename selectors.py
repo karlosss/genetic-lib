@@ -2,7 +2,7 @@ from bisect import bisect_left
 from copy import deepcopy
 from random import sample, randint
 
-from genetic.interfaces import Selector
+from .interfaces import Selector
 
 
 class CountSelector(Selector):

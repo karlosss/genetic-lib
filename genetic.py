@@ -2,10 +2,10 @@ from copy import deepcopy
 from random import randint
 from signal import signal, SIGINT
 
-from genetic.gene import Gene
-from genetic.generators import SuddenDeathException
-from genetic.interfaces import Renderer
-from genetic.renderers import NullRenderer
+from .gene import Gene
+from .generators import SuddenDeathException
+from .interfaces import Renderer
+from .renderers import NullRenderer
 
 
 class SIGINT_handler:

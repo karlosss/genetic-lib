@@ -1,5 +1,5 @@
-from genetic.generators import SuddenDeathException
-from genetic.interfaces import NonSolutionHandler
+from .generators import SuddenDeathException
+from .interfaces import NonSolutionHandler
 
 
 class SuddenDeathNonSolutionHandler(NonSolutionHandler):

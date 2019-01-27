@@ -1,4 +1,4 @@
-from genetic.interfaces import Terminator
+from .interfaces import Terminator
 
 
 class GenerationCountTerminator(Terminator):

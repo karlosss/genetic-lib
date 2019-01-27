@@ -1,7 +1,7 @@
 from random import randint
 
-from genetic.gene import Gene
-from genetic.interfaces import InitPopGenerator
+from .gene import Gene
+from .interfaces import InitPopGenerator
 
 
 class SuddenDeathException(Exception):

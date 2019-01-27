@@ -1,4 +1,4 @@
-from genetic.interfaces import MutationPreventer
+from .interfaces import MutationPreventer
 
 
 class EliteMutationPreventer(MutationPreventer):

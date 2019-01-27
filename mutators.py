@@ -1,6 +1,6 @@
 from random import sample, random
 
-from genetic.interfaces import Mutator
+from .interfaces import Mutator
 
 
 class ProbabilityMutator(Mutator):

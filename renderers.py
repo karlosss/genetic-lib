@@ -1,6 +1,4 @@
-from copy import deepcopy
-
-from genetic.interfaces import Renderer
+from .interfaces import Renderer
 
 
 class NullRenderer(Renderer):

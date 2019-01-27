@@ -1,7 +1,7 @@
 from random import sample, randint, random
 
-from genetic.gene import Gene
-from genetic.interfaces import Crossoverer
+from .gene import Gene
+from .interfaces import Crossoverer
 
 
 class TwoParentCrossoverer(Crossoverer):
