@@ -4,6 +4,16 @@ class InitPopGenerator:
 
 
 class Mutator:
+    def __init__(self):
+        self.fitness_calculator = None
+
+    def set_fitness_calculator(self, fc):
+        self.fitness_calculator = fc
+
+    def calculate_fitness(self, gene):
+        gene.fitness = self.fitness_calculator(gene)
+        return gene.fitness
+
     def __call__(self, population):
         raise NotImplementedError
 
@@ -42,13 +52,14 @@ class NonSolutionHandler:
 
     def calculate_fitness(self, gene):
         gene.fitness = self.fitness_calculator(gene)
+        return gene.fitness
 
     def __call__(self, gene):
         raise NotImplementedError
 
 
 class Renderer:
-    def append(self, population, generation_cnt):
+    def append(self, population, best, generation_cnt):
         raise NotImplementedError
 
     def write(self):

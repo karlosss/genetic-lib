@@ -46,5 +46,4 @@ class FitnessDegenerationTerminator(Terminator):
 
 class RunForeverTerminator(Terminator):
     def __call__(self, population, best, generation_cnt):
-        print("Generation: {}, best: {}".format(generation_cnt, best))
         return False

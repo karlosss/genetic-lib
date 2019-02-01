@@ -4,8 +4,7 @@ from signal import signal, SIGINT
 
 from .gene import Gene
 from .generators import SuddenDeathException
-from .interfaces import Renderer
-from .renderers import NullRenderer
+from .interfaces import Renderer, Mutator
 
 
 class SIGINT_handler:
@@ -23,18 +22,18 @@ class GeneticSolver:
                  fitness_calculator,
                  parent_selector,
                  crossoverer,
-                 mutator,
                  mutation_preventer,
                  non_solution_handler,
                  survivor_selector,
                  terminator,
-                 renderer=NullRenderer()):
+                 mutators=(),
+                 renderers=()):
 
         self._init_pop_generator = None
         self._fitness_calculator = None
         self._parent_selector = None
         self._crossoverer = None
-        self._mutator = None
+        self._mutators = None
         self._survivor_selector = None
         self._non_solution_handler = None
         self._terminator = None
@@ -44,7 +43,6 @@ class GeneticSolver:
         self._assign_init_param("fitness_calculator", fitness_calculator)
         self._assign_init_param("parent_selector", parent_selector)
         self._assign_init_param("crossoverer", crossoverer)
-        self._assign_init_param("mutator", mutator)
         self._assign_init_param("mutation_preventer", mutation_preventer)
         self._assign_init_param("non_solution_handler", non_solution_handler)
         self._assign_init_param("survivor_selector", survivor_selector)
@@ -55,9 +53,14 @@ class GeneticSolver:
         self._sigint_handler = SIGINT_handler()
         signal(SIGINT, self._sigint_handler.signal_handler)
 
-        if not isinstance(renderer, Renderer):
-            raise TypeError("renderer must be a Renderer, not {}.".format(renderer.__class__.__name__))
-        self._renderer = renderer
+        self._renderers = renderers
+        self._list_of_types_check("renderers", self._renderers, Renderer)
+
+        self._mutators = mutators
+        self._list_of_types_check("mutators", self._mutators, Mutator)
+
+        for mutator in self._mutators:
+            mutator.set_fitness_calculator(self._fitness_calculator)
 
     def _assign_init_param(self, param_name, param):
         if not hasattr(param, "__call__"):
@@ -65,37 +68,41 @@ class GeneticSolver:
         setattr(self, "_{}".format(param_name), param)
 
     @staticmethod
-    def _list_of_genes_check(param_name, param):
+    def _list_of_types_check(param_name, param, t):
         if not isinstance(param, list):
-            raise TypeError("{} must return a list of Genes, not a {}.".format(param_name, param.__class__.__name__))
+            raise TypeError("{} must return a list of {}s, not a {}.".format(param_name,
+                                                                             t.__name__, param.__class__.__name__))
         for item in param:
-            if not isinstance(item, Gene):
-                raise TypeError("Items in {} list must be Genes, not {}.".format(param_name, item.__class__.__name__))
+            if not isinstance(item, t):
+                raise TypeError("Items in {} list must be {}s, not {}.".format(param_name, t.__name__,
+                                                                               item.__class__.__name__))
 
     def _generate_init_pop(self):
         self._init_pop_generator.set_fitness_calculator(self._fitness_calculator)
         pop = self._init_pop_generator()
-        self._list_of_genes_check("init_pop_generator", pop)
+        self._list_of_types_check("init_pop_generator", pop, Gene)
         return pop
 
     def _get_mutation_prevented(self, population):
         elite = self._mutation_preventer(population)
-        self._list_of_genes_check("mutation_preventer", elite)
+        self._list_of_types_check("mutation_preventer", elite, Gene)
         return elite
 
     def _select_parents_for_next_generation(self, population):
         next_gen = self._parent_selector(population)
-        self._list_of_genes_check("selector", next_gen)
+        self._list_of_types_check("selector", next_gen, Gene)
         return next_gen
 
     def _crossover(self, parents, population):
         co = self._crossoverer(parents, population)
-        self._list_of_genes_check("crossoverer", co)
+        self._list_of_types_check("crossoverer", co, Gene)
         return co
 
     def _mutate(self, next_generation):
-        mutated = self._mutator(next_generation)
-        self._list_of_genes_check("mutator", mutated)
+        mutated = deepcopy(next_generation)
+        for mutator in self._mutators:
+            mutated = mutator(mutated)
+            self._list_of_types_check("mutator", mutated, Gene)
         return mutated
 
     def _fitness_and_repair(self, next_generation, population):
@@ -113,7 +120,7 @@ class GeneticSolver:
 
     def _select_survivors(self, next_generation, population_size):
         survivors = self._survivor_selector(next_generation, count=population_size)
-        self._list_of_genes_check("survivor_selector", survivors)
+        self._list_of_types_check("survivor_selector", survivors, Gene)
         return survivors
 
     def _terminate(self, population, best, generation_cnt):
@@ -122,11 +129,13 @@ class GeneticSolver:
             raise TypeError("terminator must return a bool, not {}.".format(term.__class__.__name__))
         term = term or self._sigint_handler.SIGINT
         if term:
-            self._renderer.write()
+            for renderer in self._renderers:
+                renderer.write()
         return term
 
-    def _render(self, population, generation_cnt):
-        self._renderer.append(population, generation_cnt)
+    def _render(self, population, best, generation_cnt):
+        for renderer in self._renderers:
+            renderer.append(population, best, generation_cnt)
 
     def run(self):
         # generate initial population
@@ -140,7 +149,7 @@ class GeneticSolver:
         generation_cnt = 0
 
         # render initial state
-        self._render(population, generation_cnt)
+        self._render(population, best, generation_cnt)
 
         while True:
             # strip the elite off of the population
@@ -183,7 +192,7 @@ class GeneticSolver:
                 item.age += 1
 
             # render current state
-            self._render(population, generation_cnt)
+            self._render(population, best, generation_cnt)
 
             # check if the algorithm terminates
             if self._terminate(population, best, generation_cnt):

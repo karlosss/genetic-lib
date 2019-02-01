@@ -68,13 +68,29 @@ class AgeSelector(CountSelector):
 
 
 class RouletteSelector(CountSelector):
-    def choose_parent_id(self, population):
+    def get_cumulative_probs(self, population):
         cumulative_probs = [0]
 
         for item in reversed(population):
             if item.fitness > 0:
-                cumulative_probs.append(cumulative_probs[-1]+item.fitness)
+                cumulative_probs.append(cumulative_probs[-1] + item.fitness)
+
+        return cumulative_probs
+
+    def choose_parent_id(self, population):
+        cumulative_probs = self.get_cumulative_probs(population)
 
         rnd = randint(cumulative_probs[0], cumulative_probs[-1])
         i = bisect_left(cumulative_probs, rnd)
         return len(population) - i
+
+
+class RouletteNegativeFitnessSelector(RouletteSelector):
+    def get_cumulative_probs(self, population):
+        cumulative_probs = [0]
+        min_fitness = min(population, key=lambda x: x.fitness).fitness
+
+        for item in reversed(population):
+            cumulative_probs.append(cumulative_probs[-1] + item.fitness - min_fitness)
+
+        return cumulative_probs
